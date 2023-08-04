@@ -3,19 +3,32 @@ import React from 'react';
 import { Alert } from 'react-native';
 import * as Location from 'expo-location';
 import Loading from './Loading';
+import axios from 'axios';
+import Weather from './Weather';
 
+const API_KEY = '2002e58b1b63a441b83a6b24a53cf29a';
 export default class extends React.Component {
 
   state = {
     isLoading: true
   }
 
+  getWeather = async (latitude, longitude) => {
+    const {data: {main: {temp}, weather}} = await axios.get(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`);
+    this.setState({
+      isLoading: false,
+      temp: temp,
+      condition: weather[0].main,
+    });
+    console.log(data);
+  }
+
   getLocation = async () => {
     try {
+      // throw Error();
       await Location.requestForegroundPermissionsAsync();
-      const {coords: latitude, longitude} = await Location.getCurrentPositionAsync();
-      this.setState({isLoading: false});
-      // Todo: Сделать запрос к API
+      const {coords: {latitude, longitude}} = await Location.getCurrentPositionAsync();
+      this.getWeather(latitude, longitude);
     } catch (error){
       Alert.alert('Не могу определить местоположение', 'очень грустно :(');
     }
@@ -24,32 +37,10 @@ export default class extends React.Component {
     this.getLocation();
   }
   render () {
-    const {isLoading} = this.state;
+    const {isLoading, temp, condition} = this.state;
     
     return (
-      isLoading ? <Loading /> : null
+      isLoading ? <Loading /> : <Weather temp={Math.round(temp)} condition={condition}/>
     );
   }
 }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-    // flexDirection: 'row',
-    // backgroundColor: 'blue',
-    // alignItems: 'center',
-    // justifyContent: 'center',
-  // },
-  // yellowView: {
-  //   flex: 1,
-  //   backgroundColor: "yellow"
-  // },
-  // blueView: {
-  //   flex: 3,
-  //   backgroundColor: 'blue'
-  // }
-  // text: {
-  //   color: 'white',
-  //   fontSize: 24
-  // }
-// });
